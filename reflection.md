@@ -1,11 +1,19 @@
 # PawPal+ Project Reflection
 
 ## 1. System Design
-
+ three core actions a user should be able to perform : 
+  1. Enter Owner + Pet Info — populate Owner (name, time available, preferences) and Pet (name,  1. Enter Owner + Pet Info — populate Owner (name, time available, preferences) and Pet (name, species,    breed, age) 
+  2. Add / Edit Tasks — create or modify Task objects (name, category, duration, priority) attached to the   pet                                                                     
+  3. Generate & View the Daily Plan — call Scheduler.generate_plan() to produce a DailyPlan and display the scheduled tasks + reasoning          
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+The initial UML design consists of five classes:
+
+- **Owner** — holds user-facing info (name, time available per day in minutes, preferences). Responsible for managing the task list (add, remove, retrieve).
+- **Pet** — stores pet profile data (name, species, breed, age). Purely a data container with a `get_info()` helper.
+- **Task** — represents a single care activity with a category (walk, feed, meds, enrichment, grooming), duration in minutes, and an integer priority (1 = high, 3 = low). Serializable via `to_dict()`.
+- **Scheduler** — the core engine. Takes an Owner and Pet as context, holds the task list, and exposes `generate_plan()` which filters and orders tasks to fit within the owner's available time. Also provides `filter_by_priority()` and `fits_in_time()` as helper methods.
+- **DailyPlan** — the output object produced by the Scheduler. Stores the chosen tasks, the skipped tasks, and a `reasoning` string explaining the selections. `display()` formats the plan for the UI and `total_duration()` sums scheduled minutes.
 
 **b. Design changes**
 
