@@ -59,7 +59,7 @@ AI was used at every stage of the project:
 - **Design brainstorming** — asked AI to draft the initial UML from the README scenario, identify the three core user actions, and suggest algorithm improvements (sorting, filtering, recurrence, conflict detection).
 - **Implementation** — used AI to generate class skeletons, flesh out method bodies, and implement specific algorithms like `next_occurrence()` using `timedelta` and the greedy scheduling loop.
 - **Refactoring** — asked AI to evaluate `filter_by_priority()` for readability; it suggested replacing the nested `sort_key` function with a pre-built dict lookup and a single lambda, which was cleaner.
-- **Documentation** — used AI to generate 1-line docstrings for all methods.
+- **Documentation** — used AI to generate 1-line and expanded docstrings for all methods.
 - **Testing** — used AI to draft the initial pytest cases for task completion and task addition.
 
 The most helpful prompt style was specific and constrained: *"Add a method to Scheduler that detects two tasks sharing the same HH:MM time slot and returns a warning string rather than raising an exception."* Vague prompts like *"improve the scheduler"* produced too many unrelated suggestions.
@@ -67,6 +67,24 @@ The most helpful prompt style was specific and constrained: *"Add a method to Sc
 **b. Judgment and verification**
 
 During the `reschedule_recurring()` implementation, AI initially suggested mutating `pet.tasks` in-place while iterating over it — a classic bug that causes tasks to be silently skipped. The fix was to iterate over `list(pet.tasks)` (a copy) instead. This was caught by reading the generated code carefully before running it, then verified by writing a manual trace: if a list shrinks while you iterate it, the index advances past the next element. Running `main.py` with a print statement before and after confirmed the copy-based version processed all tasks correctly.
+
+**c. Copilot strategy reflection**
+
+*Which Copilot features were most effective for building the scheduler?*
+
+The most effective features were **inline chat on specific methods** and **context-aware code completion**. Inline chat worked best when scoped to a single function — for example, opening chat directly on `filter_by_priority()` and asking "simplify this sort key for readability" produced a tight, targeted refactor. Completions were valuable for repetitive boilerplate like `to_dict()` and the `__str__` methods, where the pattern was obvious and AI filled it correctly without guidance. The `#file:` context tag was also useful when asking for UML updates — pointing AI at the actual source file meant suggestions matched the real method signatures rather than invented ones.
+
+*One example of rejecting or modifying an AI suggestion:*
+
+When asking AI to implement `detect_time_conflicts()`, the first suggestion used a nested loop (`O(n²)`) that compared every task against every other task. This was functionally correct but unnecessary — a single-pass dict grouping tasks by `scheduled_time` achieves the same result in `O(n)` and is easier to read. The nested loop was rejected and replaced with `slots.setdefault(task.scheduled_time, []).append(...)`, which groups all tasks in one pass and flags any slot with more than one entry. The rule applied: if a simpler data structure solves the problem, prefer it over clever control flow.
+
+*How did using separate chat sessions for different phases help?*
+
+Keeping Phase 1 (UML design), Phase 2 (class implementation), Phase 3 (algorithms), and Phase 4 (UI) in separate sessions prevented context bleed — early design decisions and half-finished stubs from one phase never polluted suggestions in the next. Each session started with a clean mental model of only what that phase needed. It also made it easier to evaluate suggestions: if a Phase 3 chat recommended changing a class interface, that was a signal the design needed revisiting rather than a reason to blindly accept the change.
+
+*What it means to be the "lead architect" when working with AI:*
+
+AI is a fast, knowledgeable junior developer — it can produce code quickly but does not understand the system's goals, constraints, or long-term design unless told explicitly. Being the lead architect meant making every structural decision before asking AI to implement it: deciding that `Scheduler` owns conflict detection (not `Pet`), that `DailyPlan` is a pure output object with no side effects, that `Owner` holds a list of pets instead of a single one. AI filled in the bodies of those decisions correctly once the skeleton was clear. When AI suggested changes that would have blurred those boundaries — like putting scheduling logic directly in `Pet` — those suggestions were rejected not because the code was wrong, but because it violated the single-responsibility principle the architecture was built on. The key lesson: AI accelerates execution; the architect's job is to make sure there is a clear design to execute against.
 
 ---
 
